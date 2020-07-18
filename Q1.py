@@ -5,17 +5,14 @@ Created: 17/07/2020
 Lang: Python 3.7.6
 '''
 
-# Largest file (625501 lines):
-# practitioner26c419ce-a137-417b-90ef-8da89cacc8e3_organization48d0bbb2-ffb1-47db-aadb-f1624d27252b.json
-
-# Patient test id: 8fb8f7d8-5e15-4a29-9d9a-67f0df262286
+###### Question 1 ######
 
 #%%
 import re, os
 import numpy as np
 
 #%%
-### Q1 ###
+
 # Placeholder for frequencies
 gender_count = {"male": 0, "female": 0, "other": 0}
 
@@ -34,7 +31,7 @@ for file in os.listdir('dataset/'):
     genders_array = np.asarray(genders)
     gender_freq = np.unique(genders_array, return_counts=True)
     
-    # Check and store if any other gender category appears (only for generalisation. No such thing was found)
+    # Check and store if any other gender category appears (only for generalisation. No such thing was found in the dataset)
     if np.any(np.isin(gender_freq[0], ['male', 'female'], invert=True)):
         
         # Get indexes of other categories
@@ -47,7 +44,7 @@ for file in os.listdir('dataset/'):
             other_total += gender_freq[1][idx]
             
         # Update dictionary
-        gender_count['other'] = other_total
+        gender_count['Other'] = other_total
 
     # Store male/female values
     gender_count[gender_freq[0][0]] += gender_freq[1][0]
@@ -55,12 +52,3 @@ for file in os.listdir('dataset/'):
 
 # Pending: generate output file from gender_count dictionary
 
-#%%
-# Method to get a whole patient bundle based on patient id
-# Regex pattern 
-id = '8fb8f7d8-5e15-4a29-9d9a-67f0df262286'
-entity = 'Patient'
-pattern = entity + '/' + id + '.*?Bundle.*?}'
-
-# Get whole patient bundle
-patient_bundle = re.search(pattern, bundle, re.DOTALL)
