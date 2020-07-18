@@ -7,16 +7,13 @@ Lang: Python 3.7.6
 
 ###### Question 2 ######
 
-
-# Largest file (625501 lines):
-# practitioner26c419ce-a137-417b-90ef-8da89cacc8e3_organization48d0bbb2-ffb1-47db-aadb-f1624d27252b.json
-
-# Patient test id: 8fb8f7d8-5e15-4a29-9d9a-67f0df262286
-
 #%%
 import pandas as pd
+import numpy as np
 import re, os
-
+pd.set_option('display.max_columns', 500)
+pd.set_option('display.max_rows', 500)
+pd.set_option('display.width', 1000)
 
 #%%
 # Entity substring function
@@ -26,56 +23,122 @@ def entity_by_id(id, entity, file_data):
     return data_string
 
 #%%
+### Create patient location index data frame ###
+
+# Placeholder
+# index = pd.DataFrame()
+index = {}
+
+# Impute placeholder
+file_names = os.listdir('dataset/')
+for file_name in file_names:
+    file_handler = open('dataset/' + file_name)
+    data = file_handler.read()
+    pat_ids = re.findall('(?<=Patient/).*?(?=\")', data, re.DOTALL)
+    file_list = np.resize([file_name], len(pat_ids))
+    partial_dic = dict(zip(pat_ids, file_list))
+    index.update(partial_dic)
+
+# Close last opened file
+file_handler.close()
+
+# Remove not needed variables
+del data, pat_ids, file_list, partial_dic, file_name, file_handler
+
+#%%
+### Create organizations data frame ###
 
 # Placeholder dict for organization data
-org_dict = {}
+org_df = pd.DataFrame(columns=['org_id', 'org_name', 'org_post_code', 'pat_number'])
+# org_dic = {}
 
 # Get organisations' id from json filenames
-file_names = os.listdir('dataset/')
 org_id_pattern = '(?<=organization).*?(?=.json)'
 org_ids = set(re.findall(org_id_pattern, ' '.join(file_names))) # unique org ids
 
 # Get sublist of files for each organization
-for org_id in ['edfbd832-fb71-427d-97c7-e9b100acff44']:
+for org_id in org_ids:
     org_files = [file_name for file_name in file_names if org_id in file_name]
     
     # Open file and get organization substring
-    file_data = open('dataset/' + org_files[0]).read()
+    file_handler = open('dataset/' + org_files[0])
+    file_data = file_handler.read()
     org_string = entity_by_id(id=org_id, entity='Organization', file_data=file_data)
     
     # Get organization name, postal code and state
     org_name = re.search('(?<=name\": \").*?(?=\",)', org_string, re.DOTALL)[0]
     org_post_code = re.search('(?<=postalCode\": \").*?(?=\",)', org_string, re.DOTALL)[0]
-    org_state = re.search('(?<=state\": \").*?(?=\"\\n)', org_string, re.DOTALL)[0]
     
     # Count how many patients are there in the file
     pat_number = len(re.findall('Patient/.*?,', file_data))
     
     # Get data from subset of files
     for org_file in org_files[1:]:
-        file_data = open('dataset/' + org_file).read()
+        file_handler = open('dataset/' + org_file)
+        file_data = file_handler.read()
         pat_number += len(re.findall('Patient/.*?,', file_data))
     
-    # Update organization dictionary
-    org_dict[org_id] = {'post_code':org_post_code, 'name':org_name, 'patients':pat_number, 'state':org_state}
-    
+    # Update organization dataframe
+    df_row = pd.Series([org_id, org_name, org_post_code, pat_number], 
+                        index = ['org_id', 'org_name', 'org_post_code', 'pat_number'])
+    org_df = org_df.append(df_row, ignore_index=True)
+    # partial_dic = {org_id: {'org_name':org_name, 'org_post_code':org_post_code, 'pat_number':pat_number}}
+    # org_dic.update(partial_dic)
 
-# Transform dictionary to pandas data frame 
+# Close last opened file
+file_handler.close()
 
+# Remove not needed variables
+del org_files, file_data, org_string, org_name, org_post_code, pat_number, df_row, org_ids, org_file, org_id, file_names, file_handler
 
 # Sort dataframe
+org_df.sort_values(by = ['org_post_code', 'pat_number', 'org_name'], ascending=True, inplace=True)
 
 #%%
-re.search(org_id_pattern, 'practitioner26c419ce-a137-417b-90ef-8da89cacc8e3_organization48d0bbb2-ffb1-47db-aadb-f1624d27252b.json')[0]
+### Generate output file ###
 
+# Read patient ids from queries
+file_handler = open('queries/Q2_input.txt')
+patient_ids = file_handler.readlines()
 
+# Initialize output data string
+output_data = ''
 
-#%%
-# Method to get a whole patient bundle based on patient id
-# Regex pattern 
-# id = '8fb8f7d8-5e15-4a29-9d9a-67f0df262286'
-# entity = 'Patient'
-# pattern = entity + '/' + id + '.*?Bundle.*?}'
+# Iterate over patient ids
+for patient_id in patient_ids:
+    
+    patient_id = patient_id.replace('\n', '')
 
-# # Get whole patient bundle
-# patient_bundle = re.search(pattern, bundle, re.DOTALL)
+    # Filter by patient id and get file name
+    patient_file = index[patient_id]
+    
+    # Search org id in file name
+    patient_org_id = re.search(org_id_pattern, patient_file)[0]
+    
+    # Get post code of organization and search for replacement candidates
+    org_post_code = org_df[org_df.org_id == patient_org_id].org_post_code.to_list()[0]
+    
+    # Filter candidates by post code
+    org_candidates = org_df[org_df.org_post_code == org_post_code]
+    
+    # Get best org replacement
+    org_rplc_id = org_candidates.iloc[0].org_id
+    
+    # Store patient id
+    output_data += 'Patient ' + patient_id + ':\n'
+
+    # Pick top 1 organization only if it is a different one 
+    if org_rplc_id != patient_org_id:
+        output_data += org_rplc_id + '\n\n'
+    else:
+        output_data += 'None\n\n'
+
+# Close last opened file
+file_handler.close()
+
+# Save output data to file
+out_handler = open('output/Q2_output.txt', mode = 'w')
+out_handler.writelines(output_data)
+
+# Close handler
+out_handler.close()
