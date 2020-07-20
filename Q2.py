@@ -3,6 +3,7 @@ Author: Gonzalo Sepulveda
 Student Id: 29505445
 Created: 18/07/2020
 Lang: Python 3.7.6
+Approximated runtime: 3 min
 '''
 
 ###### Question 2 ######
@@ -11,22 +12,20 @@ Lang: Python 3.7.6
 import pandas as pd
 import numpy as np
 import re, os
-pd.set_option('display.max_columns', 500)
-pd.set_option('display.max_rows', 500)
-pd.set_option('display.width', 1000)
 
 #%%
-# Entity substring function
+### Helper function ###
+
+# Get entity substring
 def entity_by_id(id, entity, file_data):
     pattern = entity + '/' + id + '.*?(?={\s+\"fullUrl)'
     data_string = re.search(pattern, file_data, re.DOTALL)[0]
     return data_string
 
 #%%
-### Create patient location index data frame ###
+### Create patient location index data frame (40 seconds approx) ###
 
 # Placeholder
-# index = pd.DataFrame()
 index = {}
 
 # Impute placeholder
@@ -50,7 +49,6 @@ del data, pat_ids, file_list, partial_dic, file_name, file_handler
 
 # Placeholder dict for organization data
 org_df = pd.DataFrame(columns=['org_id', 'org_name', 'org_post_code', 'pat_number'])
-# org_dic = {}
 
 # Get organisations' id from json filenames
 org_id_pattern = '(?<=organization).*?(?=.json)'
@@ -82,9 +80,7 @@ for org_id in org_ids:
     df_row = pd.Series([org_id, org_name, org_post_code, pat_number], 
                         index = ['org_id', 'org_name', 'org_post_code', 'pat_number'])
     org_df = org_df.append(df_row, ignore_index=True)
-    # partial_dic = {org_id: {'org_name':org_name, 'org_post_code':org_post_code, 'pat_number':pat_number}}
-    # org_dic.update(partial_dic)
-
+    
 # Close last opened file
 file_handler.close()
 
@@ -95,7 +91,7 @@ del org_files, file_data, org_string, org_name, org_post_code, pat_number, df_ro
 org_df.sort_values(by = ['org_post_code', 'pat_number', 'org_name'], ascending=True, inplace=True)
 
 #%%
-### Generate output file ###
+### Generate output file (2.5 min approx) ###
 
 # Read patient ids from queries
 file_handler = open('queries/Q2_input.txt')
