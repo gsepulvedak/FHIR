@@ -109,7 +109,7 @@ def patient_bh(pat_id, file_data):
 def doc_patients_bh(doc_id, files_list):
     
     # Get practitioner files
-    doc_files = [file_name for file_name in file_names if doc_id in file_name]
+    doc_files = [file_name for file_name in files_list if doc_id in file_name]
     
     # BH placeholder
     tuples_list = []
