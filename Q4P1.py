@@ -129,10 +129,19 @@ for doc_id in doc_ids:
     
     # Store patient pairs in string
     pat_pairs = ''
-    for i in range(0, len(sorted_tuples)-1, 2):
+    
+    # Consider Leukocytes count < 1e6/ml for every candidate 
+    i = 0
+    while i < len(sorted_tuples)-1:
         first = sorted_tuples[i][0]
         second = sorted_tuples[i+1][0]
-        pat_pairs += first + ' ' + second + '\n'
+        first_val = sorted_tuples[i][1]
+        second_val = sorted_tuples[i+1][1]
+        if abs(second_val - first_val) < 1:
+            pat_pairs += first + ' ' + second + '\n'
+            i += 2
+        else:
+            i += 1
     
     # Generate output string
     output_data += '\nPractitioner ' + doc_id + ':\n' + pat_pairs
