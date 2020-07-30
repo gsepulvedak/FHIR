@@ -1,7 +1,7 @@
 # README
 Fast Healthcare Interoperability Resources (FHIR) Monash data processing competition.
 
-The competition required 5 specific problems using medical data. The dataset included simulated information of patients, practitioners, organizations, encounters (consultations) and observations.
+The competition required solutions for 5 specific problems. The dataset, medical data, included simulated information of patients, practitioners, organizations, encounters (consultations) and observations.
 
 ## Dataset ##
 
